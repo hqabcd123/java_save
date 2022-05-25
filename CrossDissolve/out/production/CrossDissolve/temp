@@ -1,0 +1,130 @@
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
+/*Resources: https://blog.csdn.net/shehun11/article/details/39583375,
+* https://stackoverflow.com/questions/20346661/java-fade-in-and-out-of-images,
+* https://coderanch.com/t/337511/java/removing-scrollpane
+* ************************************************************
+* First we show up A picture, than change the element RGBa of those pixel one by one and save to A
+* because jScrollPane is using image's memory address
+* until A transfer to B and click
+* we swap A and B and do it again*/
+
+class CrossDisslove extends JFrame{
+    private BufferedImage outImage, inImage;
+    private JFrame jf;
+    private double k = 0.0;
+    private boolean statement = true;
+
+    public static void main(String[] args) {
+        new CrossDisslove();
+    }
+
+    private void reNewPicture(JScrollPane jScrollPane){
+        if (k >= 0.4){
+            statement = !statement;//flip A to B then B to A
+            if (statement){
+                try {
+                    outImage = ImageIO.read(new File(
+                            "./resources/images/32974738_2079522698961473_6317119310061895680_n.jpg"));
+                    inImage = ImageIO.read(new File(
+                            "./resources/images/51536205_119011409189500_3411637665548072030_n.jpg"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }else {
+                try {
+                    inImage = ImageIO.read(new File(
+                            "./resources/images/32974738_2079522698961473_6317119310061895680_n.jpg"));
+                    outImage = ImageIO.read(new File(
+                            "./resources/images/51536205_119011409189500_3411637665548072030_n.jpg"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            jScrollPane.setViewportView(new JLabel(new ImageIcon(outImage)));
+            jf.getContentPane().revalidate();//recatch data of panel
+            jScrollPane.updateUI();
+            k = 0.0;
+        }
+        else{
+            //System.out.println(k);
+            DissolvePicture();
+            jScrollPane.updateUI();
+        }
+    }
+
+
+    private void DissolvePicture(){
+        int greenIn = 0, redIn = 0, blueIn = 0;
+        int greenOut = 0, redOut = 0, blueOut = 0;
+        int imageWidgth = outImage.getWidth();
+        int imageHeight = outImage.getHeight();
+        BufferedImage temp = outImage;
+
+        for (int i = inImage.getMinX(); i < imageWidgth; i++) {
+            for (int j = inImage.getMinY(); j < imageHeight; j++) {
+                //temp.setRGB(i, j, (int) (((1.0-k)*outImage.getRGB(i, j))+k*inImage.getRGB(i, j)));
+
+                Color colorOut = new Color(outImage.getRGB(i, j));
+                Color colorIn = new Color(inImage.getRGB(i, j));
+
+                greenIn = colorIn.getGreen();redIn = colorIn.getRed();blueIn = colorIn.getBlue();
+                greenOut = colorOut.getGreen();redOut = colorOut.getRed();blueOut = colorOut.getBlue();
+
+                Color colortemp = new Color(
+                        (int)((1.0-k)*redOut + k*redIn), (int)((1.0-k)*greenOut + k*greenIn), (int)((1.0-k)*blueOut + k*blueIn));
+                temp.setRGB(i, j, colortemp.getRGB());
+            }
+        }
+        k += 0.01;
+    }
+
+    CrossDisslove(){
+        try {
+            outImage = ImageIO.read(new File(
+                    "./resources/images/32974738_2079522698961473_6317119310061895680_n.jpg"));
+            inImage = ImageIO.read(new File(
+                    "./resources/images/51536205_119011409189500_3411637665548072030_n.jpg"));
+        }catch (IOException io){
+            io.printStackTrace();
+        }
+//        int Height = 0, Width = 0;
+//        int outImageHeight = outImage.getHeight(), inImageHeight = inImage.getHeight();
+//        int outImageWidth = outImage.getWidth(), inImageWidth = inImage.getWidth();
+//
+//        if (outImageHeight >= inImageHeight) Height = outImageHeight;
+//        else if (inImageHeight < outImageHeight) Height = inImageHeight;
+//        if (outImageWidth >= inImageWidth) Width = outImageWidth;
+//        else if (inImageHeight < outImageHeight) Width = inImageWidth;
+
+        jf = new JFrame("pic");
+        JScrollPane jScrollPane = new JScrollPane(new JLabel(new ImageIcon(outImage)));
+
+        jf.getContentPane().add(jScrollPane);jf.pack();
+//        jf.setSize(Width, Height);
+        jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);jf.setLocationRelativeTo(null);jf.setVisible(true);
+        //************************************************************
+        final Timer timer = new Timer(10, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                reNewPicture(jScrollPane);
+                if (k >= 0.4) {
+                    System.out.println("Timer had been paused");
+                    ((Timer)e.getSource()).stop();
+                }
+            }
+        });
+        jScrollPane.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                timer.start();
+            }
+        });
+    }
+}
